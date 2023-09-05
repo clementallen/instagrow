@@ -1,23 +1,31 @@
 import * as cdk from 'aws-cdk-lib';
-import { CfnPolicy } from 'aws-cdk-lib/aws-iot';
 import { Construct } from 'constructs';
+import { ThingWithCert } from 'cdk-iot-core-certificates';
 
 export class InstagrowStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        const Policy = new CfnPolicy(this, 'policy', {
-            policyDocument: {
-                Version: '2012-10-17',
-                Statement: [
-                    {
-                        Effect: 'Allow',
-                        Action: ['iot:Connect', 'iot:Publish', 'iot:Recieve', 'iot:Subscribe'],
-                        Resource: ['*'],
-                    },
-                ],
-            },
-            policyName: 'instagrow-policy',
+        const { thingArn, certId, certPem, privKey } = new ThingWithCert(this, 'thing', {
+            thingName: 'instagrow',
+            saveToParamStore: true,
+            paramPrefix: 'devices',
+        });
+
+        new cdk.CfnOutput(this, 'Output-ThingArn', {
+            value: thingArn,
+        });
+
+        new cdk.CfnOutput(this, 'Output-CertId', {
+            value: certId,
+        });
+
+        new cdk.CfnOutput(this, 'Output-CertPem', {
+            value: certPem,
+        });
+
+        new cdk.CfnOutput(this, 'Output-PrivKey', {
+            value: privKey,
         });
     }
 }
