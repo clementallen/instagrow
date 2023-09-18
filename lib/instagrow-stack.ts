@@ -15,8 +15,6 @@ export class InstagrowStack extends cdk.Stack {
 
         const { thingArn, certId, certPem, privKey } = new ThingWithCert(this, 'thing', {
             thingName: `instagrow-${team}`,
-            // saveToParamStore: true,
-            paramPrefix: 'devices',
         });
 
         new cdk.CfnOutput(this, `Output-ThingArn-${team}`, {
@@ -43,7 +41,7 @@ export class InstagrowStack extends cdk.Stack {
         });
 
         const rule = new iot.TopicRule(this, 'rule', {
-            sql: iot.IotSql.fromStringAsVer20160323("SELECT * FROM 'instagrow/received'"),
+            sql: iot.IotSql.fromStringAsVer20160323("SELECT * FROM 'instagrow/pi/from'"),
             actions: [new iotActions.LambdaFunctionAction(func)],
             topicRuleName: `instagrow_lambda_trigger_${team.replace('-', '_')}`,
         });
