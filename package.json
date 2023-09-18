@@ -10,13 +10,17 @@
         "cdk": "cdk --require-approval never"
     },
     "devDependencies": {
+        "@aws-cdk/aws-iot-actions-alpha": "^2.94.0-alpha.0",
+        "@aws-cdk/aws-iot-alpha": "^2.94.0-alpha.0",
         "@types/node": "^20.5.9",
         "aws-cdk": "^2.94.0",
+        "esbuild": "^0.19.2",
         "ts-node": "^10.9.1",
         "typescript": "^5.2.2"
     },
     "dependencies": {
         "aws-cdk-lib": "^2.94.0",
+        "cdk-iot-core-certificates": "^1.0.388",
         "constructs": "^10.2.70",
         "source-map-support": "^0.5.21"
     }
