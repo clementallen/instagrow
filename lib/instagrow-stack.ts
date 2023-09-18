@@ -4,6 +4,7 @@ import { ThingWithCert } from 'cdk-iot-core-certificates';
 import * as iot from '@aws-cdk/aws-iot-alpha';
 import * as iotActions from '@aws-cdk/aws-iot-actions-alpha';
 import { Code, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 
 export class InstagrowStack extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -31,14 +32,11 @@ export class InstagrowStack extends cdk.Stack {
             value: privKey,
         });
 
-        const func = new Function(this, 'trigger', {
-            runtime: Runtime.NODEJS_18_X,
-            handler: 'index.handler',
-            code: Code.fromInline(`
-              exports.handler = (event) => {
-                console.log("It is test for lambda action of AWS IoT Rule.", event);
-              };`),
+        const func = new NodejsFunction(this, 'trigger', {
             functionName: 'instagrow-trigger',
+            runtime: Runtime.NODEJS_18_X,
+            handler: 'handler',
+            entry: './lib/lambdas/iot-receiver.ts',
         });
 
         const rule = new iot.TopicRule(this, 'rule', {
