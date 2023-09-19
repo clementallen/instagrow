@@ -17,17 +17,17 @@ export class InstagrowStack extends cdk.Stack {
             thingName: `instagrow-${team}`,
         });
 
-        new cdk.CfnOutput(this, `Output-ThingArn-${team}`, {
-            value: thingArn,
-        });
+        // new cdk.CfnOutput(this, `Output-ThingArn-${team}`, {
+        //     value: thingArn,
+        // });
 
-        new cdk.CfnOutput(this, `Output-CertId-${team}`, {
-            value: certId,
-        });
+        // new cdk.CfnOutput(this, `Output-CertId-${team}`, {
+        //     value: certId,
+        // });
 
-        new cdk.CfnOutput(this, `Output-CertPem-${team}`, {
-            value: certPem,
-        });
+        // new cdk.CfnOutput(this, `Output-CertPem-${team}`, {
+        //     value: certPem,
+        // });
 
         new cdk.CfnOutput(this, `Output-PrivKey-${team}`, {
             value: privKey,
