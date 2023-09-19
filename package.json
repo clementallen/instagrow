@@ -19,6 +19,7 @@
         "typescript": "^5.2.2"
     },
     "dependencies": {
+        "@aws-sdk/client-iot-data-plane": "^3.414.0",
         "aws-cdk-lib": "^2.94.0",
         "cdk-iot-core-certificates": "^1.0.388",
         "constructs": "^10.2.70",
