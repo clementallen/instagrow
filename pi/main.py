@@ -4,24 +4,32 @@ import network
 import ssl
 import time
 import ubinascii
+import json
 
-from machine import Pin, Timer
+from dht11 import *
+
+from machine import Pin, Timer, ADC
 
 import ntptime
 
 from simple import MQTTClient
 
+temp_humidity = DHT(18) #temperature and humidity sensor connect to D18 port
+moisture = ADC(0)
+
 # Wi-Fi network constants
+#  WIFI_SSID = "Starlink 2.4GHz"
+#  WIFI_PASSWORD = "Instagrow30"
 WIFI_SSID = "Starlink 2.4GHz"
 WIFI_PASSWORD = "Instagrow30"
 
 # MQTT client and broker constants
-MQTT_CLIENT_KEY = "6d174383cda7a5d6cdb948c7358b9fb29377950a97bca767e15c3d2080c1eadc-private.pem.key"
-MQTT_CLIENT_CERT = "6d174383cda7a5d6cdb948c7358b9fb29377950a97bca767e15c3d2080c1eadc-certificate.pem.crt"
+MQTT_CLIENT_KEY = "team1-private.pem.key"
+MQTT_CLIENT_CERT = "12da5fe95f06493a45fb6988ca201793885eb23bf816eaee5f82e4a81c645a3e-certificate.pem.crt"
 MQTT_CLIENT_ID = ubinascii.hexlify(machine.unique_id())
 
-MQTT_BROKER = "a3tmussvxo795j-ats.iot.us-east-1.amazonaws.com"
-MQTT_BROKER_CA = "AmazonRootCA1.pem"
+MQTT_BROKER = "<broker_url>"
+MQTT_BROKER_CA = "amazon-root-cert.pem.crt"
 
 # MQTT topic constants
 MQTT_LED_TOPIC = "picow/led"
@@ -64,6 +72,17 @@ def publish_mqtt_button_msg(t):
 
     print(f"TX: {topic_str}\n\t{msg_str}")
     mqtt_client.publish(topic_str, msg_str)
+
+def publish_sensor_metrics(t):
+    temperature,humidity = temp_humidity.readTempHumid()#temp:  humid:
+    soilMoisture = moisture.read_u16()
+    payload = {
+        "temperature": temperature,
+        "humidity": humidity,
+        "soilMoisture": soilMoisture
+    }
+    print(json.dumps(payload))
+    mqtt_client.publish('instagrow/pi/from', json.dumps(payload))
 
 
 # callback function to periodically send MQTT ping messages
@@ -113,6 +132,7 @@ while not wlan.isconnected():
 print(f"Connected to Wi-Fi SSID: {WIFI_SSID}")
 
 # update the current time on the board using NTP
+ntptime.timeout = 20
 ntptime.settime()
 
 print(f"Connecting to MQTT broker: {MQTT_BROKER}")
@@ -134,6 +154,10 @@ led.on()
 # create timer for periodic MQTT ping messages for keep-alive
 mqtt_ping_timer = Timer(
     mode=Timer.PERIODIC, period=mqtt_client.keepalive * 1000, callback=send_mqtt_ping
+)
+
+send_sensors_time = Timer(
+    mode=Timer.PERIODIC, period=5000, callback=publish_sensor_metrics
 )
 
 # main loop, continuously check for incoming MQTT messages
