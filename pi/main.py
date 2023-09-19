@@ -1,18 +1,13 @@
-# module imports
-import machine
-import network
 import ssl
-import time
-import ubinascii
 import json
-
-from dht11 import *
-
-from machine import Pin, Timer, ADC
-
+import time
 import ntptime
-
+import network
+import machine
+import ubinascii
+from dht11 import *
 from simple import MQTTClient
+from machine import Pin, Timer, ADC
 
 temp_humidity = DHT(18) #temperature and humidity sensor connect to D18 port
 moisture = ADC(0)
@@ -37,7 +32,6 @@ MQTT_LED_TOPIC = "instagrow/pi/to/led"
 MQTT_INSTAGROW_TOPIC = "instagrow/pi/to"
 MQTT_PUBLISH_TOPIC = "instagrow/pi/from"
 
-
 # function that reads PEM file and return byte array of data
 def read_pem(file):
     with open(file, "r") as input:
@@ -46,7 +40,6 @@ def read_pem(file):
         base64_text = "".join(split_text[1:-1])
 
         return ubinascii.a2b_base64(base64_text)
-
 
 # callback function to handle received MQTT messages
 def on_mqtt_msg(topic, msg):
@@ -77,7 +70,6 @@ def on_mqtt_msg(topic, msg):
             time.sleep(duration / 1000)
             pump_relay.value(0)
 
-
 def publish_sensor_metrics(t):
     temperature,humidity = temp_humidity.readTempHumid()
     soilMoisture = moisture.read_u16()
@@ -92,13 +84,11 @@ def publish_sensor_metrics(t):
 
     mqtt_client.publish(MQTT_PUBLISH_TOPIC, json.dumps(payload))
 
-
 # callback function to periodically send MQTT ping messages
 # to the MQTT broker
 def send_mqtt_ping(t):
     print("TX: ping")
     mqtt_client.ping()
-
 
 # read the data in the private key, public certificate, and
 # root CA files
