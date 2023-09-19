@@ -16,6 +16,7 @@ from simple import MQTTClient
 
 temp_humidity = DHT(18) #temperature and humidity sensor connect to D18 port
 moisture = ADC(0)
+pump_relay = Pin(20, Pin.OUT)
 
 # Wi-Fi network constants
 #  WIFI_SSID = "Starlink 2.4GHz"
@@ -32,8 +33,9 @@ MQTT_BROKER = "<broker_url>"
 MQTT_BROKER_CA = "amazon-root-cert.pem.crt"
 
 # MQTT topic constants
-MQTT_LED_TOPIC = "picow/led"
-MQTT_BUTTON_TOPIC = "picow/button"
+MQTT_LED_TOPIC = "instagrow/pi/to/led"
+MQTT_INSTAGROW_TOPIC = "instagrow/pi/to"
+MQTT_PUBLISH_TOPIC = "instagrow/pi/from"
 
 
 # function that reads PEM file and return byte array of data
@@ -52,10 +54,10 @@ def on_mqtt_msg(topic, msg):
     topic_str = topic.decode()
     msg_str = msg.decode()
 
-    print(f"RX: {topic_str}\n\t{msg_str}")
+    print(f"RX: {topic_str}\n{msg_str}\n")
 
     # process message
-    if topic_str is MQTT_LED_TOPIC:
+    if topic_str == MQTT_LED_TOPIC:
         if msg_str is "on":
             led.on()
         elif msg_str is "off":
@@ -63,26 +65,32 @@ def on_mqtt_msg(topic, msg):
         elif msg_str is "toggle":
             led.toggle()
 
+    elif topic_str == MQTT_INSTAGROW_TOPIC:
+        payload = json.loads(msg_str)
 
-# callback function to handle changes in button state
-# publishes "released" or "pressed" message
-def publish_mqtt_button_msg(t):
-    topic_str = MQTT_BUTTON_TOPIC
-    msg_str = "released" if button.value() else "pressed"
+        if (payload.get("type") == "waterPlant"):
+            duration = payload.get("duration")
 
-    print(f"TX: {topic_str}\n\t{msg_str}")
-    mqtt_client.publish(topic_str, msg_str)
+            print(f"Running pump for {duration}ms\n")
+
+            pump_relay.value(1)
+            time.sleep(duration / 1000)
+            pump_relay.value(0)
+
 
 def publish_sensor_metrics(t):
-    temperature,humidity = temp_humidity.readTempHumid()#temp:  humid:
+    temperature,humidity = temp_humidity.readTempHumid()
     soilMoisture = moisture.read_u16()
+
     payload = {
         "temperature": temperature,
         "humidity": humidity,
         "soilMoisture": soilMoisture
     }
-    print(json.dumps(payload))
-    mqtt_client.publish('instagrow/pi/from', json.dumps(payload))
+
+    print(f"TX: {MQTT_PUBLISH_TOPIC}\n{json.dumps(payload)}\n")
+
+    mqtt_client.publish(MQTT_PUBLISH_TOPIC, json.dumps(payload))
 
 
 # callback function to periodically send MQTT ping messages
@@ -100,7 +108,6 @@ ca = read_pem(MQTT_BROKER_CA)
 
 # create pin objects for on-board LED and external button
 led = Pin("LED", Pin.OUT)
-button = Pin(3, Pin.IN, Pin.PULL_UP)
 
 # initialize the Wi-Fi interface
 wlan = network.WLAN(network.STA_IF)
@@ -142,11 +149,9 @@ print(f"Connecting to MQTT broker: {MQTT_BROKER}")
 mqtt_client.set_callback(on_mqtt_msg)
 mqtt_client.connect()
 mqtt_client.subscribe(MQTT_LED_TOPIC)
+mqtt_client.subscribe(MQTT_INSTAGROW_TOPIC)
 
 print(f"Connected to MQTT broker: {MQTT_BROKER}")
-
-# register callback function to handle changes in button state
-button.irq(publish_mqtt_button_msg, Pin.IRQ_FALLING | Pin.IRQ_RISING)
 
 # turn on-board LED on
 led.on()
@@ -156,8 +161,10 @@ mqtt_ping_timer = Timer(
     mode=Timer.PERIODIC, period=mqtt_client.keepalive * 1000, callback=send_mqtt_ping
 )
 
+publish_sensor_metrics("")
+
 send_sensors_time = Timer(
-    mode=Timer.PERIODIC, period=5000, callback=publish_sensor_metrics
+    mode=Timer.PERIODIC, period=30 * 1000, callback=publish_sensor_metrics
 )
 
 # main loop, continuously check for incoming MQTT messages
